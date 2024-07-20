@@ -15,7 +15,8 @@ type course struct {
 
 func main() {
 	fmt.Println("Welcome to JSON video")
-	EncodeJson()
+	//EncodeJson()
+	DecodeJson()
 }
 
 func EncodeJson() {
@@ -32,4 +33,45 @@ func EncodeJson() {
 	}
 
 	fmt.Printf("%s", finalJson)
+}
+
+func DecodeJson() {
+	jsoData := []byte(`
+        {
+                "courseName": "Mern Bootcamp",
+                "price": 199,
+                "platform": "google.com",
+                "tags": ["full-stack","js"]
+        }
+`)
+
+	//var Course course
+	checkJson := json.Valid(jsoData)
+
+	//if checkJson {
+	//	fmt.Println("Json was valid")
+	//	err := json.Unmarshal(jsoData, &Course)
+	//	if err != nil {
+	//		panic(err)
+	//	}
+	//
+	//	fmt.Printf("%#v\n", Course)
+	//} else {
+	//	fmt.Println("Json was not valid")
+	//}
+
+	if checkJson {
+		var onlideData map[string]interface{}
+		err := json.Unmarshal(jsoData, &onlideData)
+		if err != nil {
+			panic(err)
+		}
+		for k, v := range onlideData {
+			fmt.Printf("Key: %v, Value: %v Value type: %T \n", k, v, v)
+		}
+
+		//fmt.Printf("%#v\n", Course)
+	} else {
+		fmt.Println("Json was not valid")
+	}
 }
