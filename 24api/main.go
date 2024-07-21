@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -33,7 +34,38 @@ func (course *Course) IsEmpty() bool {
 }
 
 func main() {
+	r := mux.NewRouter()
 
+	// seed data to the fake db
+	courses = append(courses, Course{
+		CourseId:   "123",
+		CourseName: "Course1",
+		Price:      11,
+		Author: &Author{
+			Fullname: "Auron Vila",
+			Website:  "auronvila.com",
+		},
+	})
+
+	courses = append(courses, Course{
+		CourseId:   "321",
+		CourseName: "Course2",
+		Price:      22,
+		Author: &Author{
+			Fullname: "Auron Vila",
+			Website:  "auronvila.com",
+		},
+	})
+
+	// routes
+	r.HandleFunc("/", serveHome).Methods("GET")
+	r.HandleFunc("/courses", getCourses).Methods("GET")
+	r.HandleFunc("/course/{id}", getCourse).Methods("GET")
+	r.HandleFunc("/course", createCourseRecord).Methods("POST")
+	r.HandleFunc("/course/{id}", updateCourse).Methods("PUT")
+	r.HandleFunc("/course/{id}", removeCourse).Methods("DELETE")
+
+	log.Fatal(http.ListenAndServe(":4000", r))
 }
 
 // controllers -> separate file
@@ -71,16 +103,27 @@ func createCourseRecord(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode("Please send data")
 	}
 
-	var course Course
-	_ = json.NewDecoder(r.Body).Decode(&course)
+	var newCourse Course
+	_ = json.NewDecoder(r.Body).Decode(&newCourse)
 
-	if course.IsEmpty() {
-		json.NewEncoder(w).Encode("Please send data")
+	if newCourse.IsEmpty() {
+		jsonResponse := fmt.Sprintf(`{"message": "Please send data", "courseName": "%s", "price": "%s"}`, newCourse.CourseName, newCourse.Price)
+		err := json.NewEncoder(w).Encode(jsonResponse)
+		if err != nil {
+			panic(err)
+		}
 		return
 	}
 
-	course.CourseId = strconv.Itoa(rand.Intn(1000))
-	courses := append(courses, course)
+	for _, course := range courses {
+		if course.CourseName == newCourse.CourseName {
+			json.NewEncoder(w).Encode("A course with this name exists")
+			return
+		}
+	}
+
+	newCourse.CourseId = strconv.Itoa(rand.Intn(1000))
+	courses := append(courses, newCourse)
 	json.NewEncoder(w).Encode(courses)
 }
 
@@ -116,7 +159,8 @@ func removeCourse(w http.ResponseWriter, r *http.Request) {
 			courses = append(courses[:index], courses[index+1:]...)
 			break
 		} else {
-			panic("Could not find a course with given Id")
+			json.NewEncoder(w).Encode("Could not find a course with given Id")
+			return
 		}
 	}
 }
